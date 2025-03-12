@@ -1,0 +1,57 @@
+package com.Denuncias.denuncias.Seguridad;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfigurationSource;
+
+@Configuration
+@EnableWebSecurity
+public class AutorizUsuario {
+
+    @Autowired
+    private CorsConfigurationSource corsConfigurationSource; // Inyección de CORS Config
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable())
+
+                .cors(cors -> cors.configurationSource(corsConfigurationSource)) // Se usa la configuración de CORS
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/", "/formularioCliente", "/registrarCliente", "/login", "/formularioLogin", "/formularioPrestaciones").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/cliente/**").permitAll()
+                        .requestMatchers("/usuarios/**").permitAll() // Permite acceso sin autenticación a todos los endpoints de usuarios
+                        .requestMatchers("/api/auth/login").permitAll() // Añadido para el nuevo endpoint de login
+                        .requestMatchers("/administrador/**").hasAuthority("ROLE_ADMIN")  // Se corrige `hasRole` -> `hasAuthority`
+                        .requestMatchers("/vistaCliente").hasAuthority("ROLE_CLIENTE")
+                        .requestMatchers("/vistaProveedor").hasAuthority("ROLE_PROVEEDOR")
+                        .anyRequest().authenticated()
+                )
+                .formLogin(form -> form
+                        .loginPage("/formularioLogin")
+                        .permitAll()
+                        .loginProcessingUrl("/login")
+                        .defaultSuccessUrl("/postLogin", true)
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/formularioLogin?logout")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll()
+                );
+
+        return http.build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
+    }
+}
