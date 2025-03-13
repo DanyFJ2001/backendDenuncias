@@ -23,6 +23,15 @@ public class UsuarioControlador {
     public List<Usuario> mostrar() {
         return usuarioServicio.mostrarUsuarios();
     }
+    @GetMapping("/usuario/{id}")
+    public ResponseEntity<Usuario> getUsuarioPorId(@PathVariable Long id) {
+        Optional<Usuario> usuario = usuarioServicio.buscarUsuarioId(id);
+        if(usuario.isPresent()) {
+            return ResponseEntity.ok(usuario.get());
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
     @PostMapping("/guardarUsuario")
     public Usuario guardar(@RequestBody Usuario usuario) {

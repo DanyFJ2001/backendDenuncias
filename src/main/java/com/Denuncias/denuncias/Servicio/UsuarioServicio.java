@@ -72,6 +72,7 @@ public class UsuarioServicio {
         return usuarioRepositorio.findById(id);
     }
 
+
     // Método para buscar usuario por username
     public Usuario buscarPorUsername(String username) {
         return usuarioRepositorio.findByUsername(username);
