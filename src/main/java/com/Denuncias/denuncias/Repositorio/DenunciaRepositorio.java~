@@ -1,0 +1,11 @@
+package com.Denuncias.denuncias.Repositorio;
+
+import com.Denuncias.denuncias.Entidad.Denuncia;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface DenunciaRepositorio extends JpaRepository<Denuncia, Long> {
+    List<Denuncia> findByNombreContratoContainingIgnoreCase(String nombreContrato);
+
+}

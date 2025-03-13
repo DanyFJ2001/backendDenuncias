@@ -21,13 +21,12 @@ public class AutorizUsuario {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-
                 .cors(cors -> cors.configurationSource(corsConfigurationSource)) // Se usa la configuración de CORS
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/formularioCliente", "/registrarCliente", "/login", "/formularioLogin", "/formularioPrestaciones").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/cliente/**").permitAll()
-                        .requestMatchers("/usuarios/**").permitAll() // Permite acceso sin autenticación a todos los endpoints de usuarios
-                        .requestMatchers("/api/auth/login").permitAll() // Añadido para el nuevo endpoint de login
+                        .requestMatchers("/usuarios/**").permitAll()
+                        .requestMatchers("/denuncias/**").permitAll()// Permite acceso sin autenticación a todos los endpoints de usuarios
                         .requestMatchers("/administrador/**").hasAuthority("ROLE_ADMIN")  // Se corrige `hasRole` -> `hasAuthority`
                         .requestMatchers("/vistaCliente").hasAuthority("ROLE_CLIENTE")
                         .requestMatchers("/vistaProveedor").hasAuthority("ROLE_PROVEEDOR")
