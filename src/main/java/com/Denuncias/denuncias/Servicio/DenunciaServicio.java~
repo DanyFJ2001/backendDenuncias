@@ -35,7 +35,6 @@ public class DenunciaServicio {
 
     /**
      * Obtiene todas las denuncias registradas
-     *
      * @return Lista de todas las denuncias
      */
     public List<Denuncia> mostrarDenuncias() {
@@ -44,7 +43,6 @@ public class DenunciaServicio {
 
     /**
      * Busca una denuncia por su ID
-     *
      * @param id ID de la denuncia a buscar
      * @return Opcional que contiene la denuncia si existe
      */
@@ -54,7 +52,6 @@ public class DenunciaServicio {
 
     /**
      * Busca denuncias por tipo
-     *
      * @param tipo Tipo de denuncia a buscar
      * @return Lista de denuncias del tipo especificado
      */
@@ -64,7 +61,6 @@ public class DenunciaServicio {
 
     /**
      * Busca denuncias por ID de usuario
-     *
      * @param usuarioId ID del usuario
      * @return Lista de denuncias realizadas por el usuario
      */
@@ -74,7 +70,6 @@ public class DenunciaServicio {
 
     /**
      * Busca denuncias por estado
-     *
      * @param estado Estado de las denuncias a buscar
      * @return Lista de denuncias en el estado especificado
      */
@@ -84,7 +79,6 @@ public class DenunciaServicio {
 
     /**
      * Guarda o actualiza una denuncia
-     *
      * @param denuncia Denuncia a guardar o actualizar
      * @return Denuncia guardada
      */
@@ -95,7 +89,6 @@ public class DenunciaServicio {
 
     /**
      * Elimina una denuncia por su ID
-     *
      * @param id ID de la denuncia a eliminar
      */
     @Transactional
@@ -108,14 +101,55 @@ public class DenunciaServicio {
      * @return Array de bytes con el contenido del PDF
      * @throws DocumentException Si hay un error generando el documento
      */
+    public byte[] generarPdfDenuncias() throws DocumentException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = new Document();
+        PdfWriter.getInstance(document, baos);
+
+        document.open();
+        addMetaData(document);
+
+        Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18);
+        Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+
+        Paragraph title = new Paragraph("Listado de Denuncias", titleFont);
+        title.setAlignment(Paragraph.ALIGN_CENTER);
+        title.setSpacingAfter(20);
+        document.add(title);
+
+        PdfPTable table = new PdfPTable(6); // 6 columnas
+        table.setWidthPercentage(100);
+
+        // Encabezados
+        addTableHeader(table, headerFont);
+
+        // Datos
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        List<Denuncia> denuncias = mostrarDenuncias();
+
+        for (Denuncia denuncia : denuncias) {
+            table.addCell(denuncia.getId().toString());
+            table.addCell(denuncia.getTipo());
+            table.addCell(denuncia.getUbicacion());
+            table.addCell(denuncia.getEstado().toString());
+            table.addCell(denuncia.getFechaCreacion().format(formatter));
+            table.addCell(denuncia.getUsuario().getNombre());
+        }
+
+        document.add(table);
+        document.close();
+
+        return baos.toByteArray();
+    }
+
     /**
-     * Genera un PDF con todas las denuncias con mejor diseño
+     * Genera un PDF con el detalle de una denuncia específica
+     * @param id ID de la denuncia
      * @return Array de bytes con el contenido del PDF
      * @throws DocumentException Si hay un error generando el documento
      */
     /**
-     * Este método reemplaza al anterior generarPdfDenuncias
-     *
+     * Genera un PDF con todas las denuncias con mejor diseño
      * @return Array de bytes con el contenido del PDF
      * @throws DocumentException Si hay un error generando el documento
      */
@@ -217,12 +251,15 @@ public class DenunciaServicio {
                 case PENDIENTE:
                     estadoColor = new BaseColor(255, 152, 0); // Naranja
                     break;
-
+                case EN_PROCESO:
+                    estadoColor = new BaseColor(33, 150, 243); // Azul
+                    break;
                 case RESUELTA:
                     estadoColor = new BaseColor(76, 175, 80); // Verde
                     break;
-
-
+                case CERRADA:
+                    estadoColor = new BaseColor(158, 158, 158); // Gris
+                    break;
                 case RECHAZADA:
                     estadoColor = new BaseColor(244, 67, 54); // Rojo
                     break;
@@ -271,7 +308,6 @@ public class DenunciaServicio {
 
     /**
      * Genera un PDF con el detalle de una denuncia específica
-     *
      * @param id ID de la denuncia
      * @return Array de bytes con el contenido del PDF
      * @throws DocumentException Si hay un error generando el documento
@@ -313,11 +349,15 @@ public class DenunciaServicio {
             case PENDIENTE:
                 estadoColor = new BaseColor(255, 152, 0); // Naranja
                 break;
-
+            case EN_PROCESO:
+                estadoColor = new BaseColor(33, 150, 243); // Azul
+                break;
             case RESUELTA:
                 estadoColor = new BaseColor(76, 175, 80); // Verde
                 break;
-
+            case CERRADA:
+                estadoColor = new BaseColor(158, 158, 158); // Gris
+                break;
             case RECHAZADA:
                 estadoColor = new BaseColor(244, 67, 54); // Rojo
                 break;
@@ -499,4 +539,3 @@ public class DenunciaServicio {
         document.addAuthor("Sistema de Denuncias");
         document.addCreator("Sistema de Denuncias v2.0");
     }
-}

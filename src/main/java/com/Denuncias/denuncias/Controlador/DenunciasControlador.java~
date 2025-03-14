@@ -14,7 +14,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -34,148 +37,257 @@ public class DenunciasControlador {
     }
 
     @GetMapping("/mostrar")
-    public List<Denuncia> mostrarDenuncias() {
-        return denunciaServicio.mostrarDenuncias();
+    public ResponseEntity<?> mostrarDenuncias() {
+        try {
+            List<Denuncia> denuncias = denunciaServicio.mostrarDenuncias();
+            return ResponseEntity.ok(denuncias);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al obtener denuncias: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/mostrarSimple")
+    public ResponseEntity<?> mostrarDenunciasSimple() {
+        try {
+            List<Denuncia> denuncias = denunciaServicio.mostrarDenuncias();
+            List<Map<String, Object>> denunciasSimples = new ArrayList<>();
+
+            for (Denuncia d : denuncias) {
+                Map<String, Object> denunciaMap = new HashMap<>();
+                denunciaMap.put("id", d.getId());
+                denunciaMap.put("tipo", d.getTipo());
+                denunciaMap.put("descripcion", d.getDescripcion());
+                denunciaMap.put("ubicacion", d.getUbicacion());
+                denunciaMap.put("contacto", d.getContacto());
+                denunciaMap.put("estado", d.getEstado().toString());
+                denunciaMap.put("fechaCreacion", d.getFechaCreacion().toString());
+
+                if (d.getFechaActualizacion() != null) {
+                    denunciaMap.put("fechaActualizacion", d.getFechaActualizacion().toString());
+                }
+
+                if (d.getUsuario() != null) {
+                    Map<String, Object> usuarioMap = new HashMap<>();
+                    usuarioMap.put("id", d.getUsuario().getId());
+                    usuarioMap.put("nombre", d.getUsuario().getNombre());
+                    denunciaMap.put("usuario", usuarioMap);
+                }
+
+                denunciasSimples.add(denunciaMap);
+            }
+
+            return ResponseEntity.ok(denunciasSimples);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al obtener denuncias: " + e.getMessage());
+        }
     }
 
     @GetMapping("/buscar/{tipo}")
-    public List<Denuncia> buscarPorTipo(@PathVariable String tipo) {
-        return denunciaServicio.buscarDenunciaPorTipo(tipo);
+    public ResponseEntity<?> buscarPorTipo(@PathVariable String tipo) {
+        try {
+            List<Denuncia> denuncias = denunciaServicio.buscarDenunciaPorTipo(tipo);
+            return ResponseEntity.ok(denuncias);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al buscar denuncias por tipo: " + e.getMessage());
+        }
     }
 
     @GetMapping("/usuario/{usuarioId}")
-    public List<Denuncia> buscarPorUsuario(@PathVariable Long usuarioId) {
-        return denunciaServicio.buscarDenunciasPorUsuarioId(usuarioId);
+    public ResponseEntity<?> buscarPorUsuario(@PathVariable Long usuarioId) {
+        try {
+            List<Denuncia> denuncias = denunciaServicio.buscarDenunciasPorUsuarioId(usuarioId);
+            return ResponseEntity.ok(denuncias);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al buscar denuncias por usuario: " + e.getMessage());
+        }
     }
 
     @GetMapping("/estado/{estado}")
-    public List<Denuncia> buscarPorEstado(@PathVariable Denuncia.EstadoDenuncia estado) {
-        return denunciaServicio.buscarDenunciasPorEstado(estado);
+    public ResponseEntity<?> buscarPorEstado(@PathVariable Denuncia.EstadoDenuncia estado) {
+        try {
+            List<Denuncia> denuncias = denunciaServicio.buscarDenunciasPorEstado(estado);
+            return ResponseEntity.ok(denuncias);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al buscar denuncias por estado: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Denuncia> buscarPorId(@PathVariable Long id) {
-        Optional<Denuncia> denuncia = denunciaServicio.buscarDenunciaId(id);
+    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
+        try {
+            Optional<Denuncia> denuncia = denunciaServicio.buscarDenunciaId(id);
 
-        if (denuncia.isPresent()) {
-            return ResponseEntity.ok(denuncia.get());
-        } else {
-            return ResponseEntity.notFound().build();
+            if (denuncia.isPresent()) {
+                return ResponseEntity.ok(denuncia.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró la denuncia con ID: " + id);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al buscar denuncia: " + e.getMessage());
         }
     }
 
     @PostMapping("/guardar")
-    public ResponseEntity<Denuncia> guardarDenuncia(@RequestBody Denuncia denuncia) {
-        // Verificar que el usuario existe
-        if (denuncia.getUsuario() != null && denuncia.getUsuario().getId() != null) {
-            Optional<Usuario> usuario = usuarioServicio.buscarUsuarioId(denuncia.getUsuario().getId());
+    public ResponseEntity<?> guardarDenuncia(@RequestBody Denuncia denuncia) {
+        try {
+            // Verificar que el usuario existe
+            if (denuncia.getUsuario() != null && denuncia.getUsuario().getId() != null) {
+                Optional<Usuario> usuario = usuarioServicio.buscarUsuarioId(denuncia.getUsuario().getId());
 
-            if (!usuario.isPresent()) {
-                return ResponseEntity.badRequest().build();
+                if (!usuario.isPresent()) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body("El usuario especificado no existe");
+                }
+
+                denuncia.setUsuario(usuario.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Se requiere un usuario válido para crear una denuncia");
             }
 
-            denuncia.setUsuario(usuario.get());
-        } else {
-            return ResponseEntity.badRequest().build();
+            // Establecer valores iniciales
+            denuncia.setFechaCreacion(LocalDateTime.now());
+            denuncia.setEstado(Denuncia.EstadoDenuncia.PENDIENTE);
+
+            Denuncia denunciaGuardada = denunciaServicio.guardarDenuncia(denuncia);
+            return ResponseEntity.status(HttpStatus.CREATED).body(denunciaGuardada);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al guardar denuncia: " + e.getMessage());
         }
-
-        // Establecer valores iniciales
-        denuncia.setFechaCreacion(LocalDateTime.now());
-        denuncia.setEstado(Denuncia.EstadoDenuncia.PENDIENTE);
-
-        denunciaServicio.guardarDenuncia(denuncia);
-        return ResponseEntity.status(HttpStatus.CREATED).body(denuncia);
     }
 
     @PostMapping("/guardarConEvidencia")
-    public ResponseEntity<Denuncia> guardarDenunciaConEvidencia(
+    public ResponseEntity<?> guardarDenunciaConEvidencia(
             @RequestParam("tipo") String tipo,
             @RequestParam("ubicacion") String ubicacion,
             @RequestParam("descripcion") String descripcion,
             @RequestParam("contacto") String contacto,
             @RequestParam("usuarioId") Long usuarioId,
             @RequestParam(value = "evidencia", required = false) MultipartFile evidencia) {
+        try {
+            // Verificar que el usuario existe
+            Optional<Usuario> usuario = usuarioServicio.buscarUsuarioId(usuarioId);
+            if (!usuario.isPresent()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("El usuario especificado no existe");
+            }
 
-        // Verificar que el usuario existe
-        Optional<Usuario> usuario = usuarioServicio.buscarUsuarioId(usuarioId);
-        if (!usuario.isPresent()) {
-            return ResponseEntity.badRequest().build();
+            Denuncia denuncia = new Denuncia();
+            denuncia.setTipo(tipo);
+            denuncia.setUbicacion(ubicacion);
+            denuncia.setDescripcion(descripcion);
+            denuncia.setContacto(contacto);
+            denuncia.setUsuario(usuario.get());
+            denuncia.setFechaCreacion(LocalDateTime.now());
+            denuncia.setEstado(Denuncia.EstadoDenuncia.PENDIENTE);
+
+            // Aquí se manejaría la lógica para guardar el archivo de evidencia
+            // y asignar la URL correspondiente a la denuncia
+
+            Denuncia denunciaGuardada = denunciaServicio.guardarDenuncia(denuncia);
+            return ResponseEntity.status(HttpStatus.CREATED).body(denunciaGuardada);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al guardar denuncia con evidencia: " + e.getMessage());
         }
-
-        Denuncia denuncia = new Denuncia();
-        denuncia.setTipo(tipo);
-        denuncia.setUbicacion(ubicacion);
-        denuncia.setDescripcion(descripcion);
-        denuncia.setContacto(contacto);
-        denuncia.setUsuario(usuario.get());
-        denuncia.setFechaCreacion(LocalDateTime.now());
-        denuncia.setEstado(Denuncia.EstadoDenuncia.PENDIENTE);
-
-        // Aquí se manejaría la lógica para guardar el archivo de evidencia
-        // y asignar la URL correspondiente a la denuncia
-
-        denunciaServicio.guardarDenuncia(denuncia);
-        return ResponseEntity.status(HttpStatus.CREATED).body(denuncia);
     }
 
     @PutMapping("/actualizar/{id}")
-    public ResponseEntity<Denuncia> actualizarDenuncia(@PathVariable Long id, @RequestBody Denuncia denunciaData) {
-        Optional<Denuncia> denunciaOptional = denunciaServicio.buscarDenunciaId(id);
+    public ResponseEntity<?> actualizarDenuncia(@PathVariable Long id, @RequestBody Denuncia denunciaData) {
+        try {
+            Optional<Denuncia> denunciaOptional = denunciaServicio.buscarDenunciaId(id);
 
-        if (!denunciaOptional.isPresent()) {
-            return ResponseEntity.notFound().build();
+            if (!denunciaOptional.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró la denuncia con ID: " + id);
+            }
+
+            Denuncia denuncia = denunciaOptional.get();
+
+            // Actualizar los campos
+            denuncia.setTipo(denunciaData.getTipo());
+            denuncia.setUbicacion(denunciaData.getUbicacion());
+            denuncia.setDescripcion(denunciaData.getDescripcion());
+            denuncia.setContacto(denunciaData.getContacto());
+
+            // Si se está actualizando el estado
+            if (denunciaData.getEstado() != null) {
+                denuncia.setEstado(denunciaData.getEstado());
+            }
+
+            // Actualizar la fecha de actualización
+            denuncia.setFechaActualizacion(LocalDateTime.now());
+
+            Denuncia denunciaActualizada = denunciaServicio.guardarDenuncia(denuncia);
+            return ResponseEntity.ok(denunciaActualizada);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al actualizar denuncia: " + e.getMessage());
         }
-
-        Denuncia denuncia = denunciaOptional.get();
-
-        // Actualizar los campos
-        denuncia.setTipo(denunciaData.getTipo());
-        denuncia.setUbicacion(denunciaData.getUbicacion());
-        denuncia.setDescripcion(denunciaData.getDescripcion());
-        denuncia.setContacto(denunciaData.getContacto());
-
-        // Si se está actualizando el estado
-        if (denunciaData.getEstado() != null) {
-            denuncia.setEstado(denunciaData.getEstado());
-        }
-
-        // Actualizar la fecha de actualización
-        denuncia.setFechaActualizacion(LocalDateTime.now());
-
-        denunciaServicio.guardarDenuncia(denuncia);
-        return ResponseEntity.ok(denuncia);
     }
 
     @PutMapping("/cambiarEstado/{id}")
-    public ResponseEntity<Denuncia> cambiarEstadoDenuncia(@PathVariable Long id, @RequestParam Denuncia.EstadoDenuncia estado) {
-        Optional<Denuncia> denunciaOptional = denunciaServicio.buscarDenunciaId(id);
+    public ResponseEntity<?> cambiarEstadoDenuncia(@PathVariable Long id, @RequestParam Denuncia.EstadoDenuncia estado) {
+        try {
+            Optional<Denuncia> denunciaOptional = denunciaServicio.buscarDenunciaId(id);
 
-        if (!denunciaOptional.isPresent()) {
-            return ResponseEntity.notFound().build();
+            if (!denunciaOptional.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró la denuncia con ID: " + id);
+            }
+
+            Denuncia denuncia = denunciaOptional.get();
+            denuncia.setEstado(estado);
+            denuncia.setFechaActualizacion(LocalDateTime.now());
+
+            Denuncia denunciaActualizada = denunciaServicio.guardarDenuncia(denuncia);
+            return ResponseEntity.ok(denunciaActualizada);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al cambiar estado de denuncia: " + e.getMessage());
         }
-
-        Denuncia denuncia = denunciaOptional.get();
-        denuncia.setEstado(estado);
-        denuncia.setFechaActualizacion(LocalDateTime.now());
-
-        denunciaServicio.guardarDenuncia(denuncia);
-        return ResponseEntity.ok(denuncia);
     }
 
     @DeleteMapping("/eliminar/{id}")
-    public ResponseEntity<Void> eliminarDenuncia(@PathVariable Long id) {
-        Optional<Denuncia> denunciaOptional = denunciaServicio.buscarDenunciaId(id);
+    public ResponseEntity<?> eliminarDenuncia(@PathVariable Long id) {
+        try {
+            Optional<Denuncia> denunciaOptional = denunciaServicio.buscarDenunciaId(id);
 
-        if (!denunciaOptional.isPresent()) {
-            return ResponseEntity.notFound().build();
+            if (!denunciaOptional.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró la denuncia con ID: " + id);
+            }
+
+            denunciaServicio.eliminarDenuncia(id);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                    .body("Denuncia eliminada correctamente");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al eliminar denuncia: " + e.getMessage());
         }
-
-        denunciaServicio.eliminarDenuncia(id);
-        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/pdf")
-    public ResponseEntity<byte[]> generarPdfDenuncias() {
+    public ResponseEntity<?> generarPdfDenuncias() {
         try {
             byte[] pdfBytes = denunciaServicio.generarPdfDenuncias();
 
@@ -186,12 +298,13 @@ public class DenunciasControlador {
             return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al generar PDF de denuncias: " + e.getMessage());
         }
     }
 
     @GetMapping("/pdf/{id}")
-    public ResponseEntity<byte[]> generarPdfDenunciaDetalle(@PathVariable Long id) {
+    public ResponseEntity<?> generarPdfDenunciaDetalle(@PathVariable Long id) {
         try {
             byte[] pdfBytes = denunciaServicio.generarPdfDenunciaDetalle(id);
 
@@ -202,7 +315,8 @@ public class DenunciasControlador {
             return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al generar PDF de detalle de denuncia: " + e.getMessage());
         }
     }
 }

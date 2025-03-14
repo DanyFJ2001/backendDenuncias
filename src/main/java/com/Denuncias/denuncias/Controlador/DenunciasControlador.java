@@ -36,19 +36,8 @@ public class DenunciasControlador {
         return "API de denuncias funcionando correctamente";
     }
 
-    @GetMapping("/mostrar")
-    public ResponseEntity<?> mostrarDenuncias() {
-        try {
-            List<Denuncia> denuncias = denunciaServicio.mostrarDenuncias();
-            return ResponseEntity.ok(denuncias);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al obtener denuncias: " + e.getMessage());
-        }
-    }
 
-    @GetMapping("/mostrarSimple")
+    @GetMapping("/mostrar")
     public ResponseEntity<?> mostrarDenunciasSimple() {
         try {
             List<Denuncia> denuncias = denunciaServicio.mostrarDenuncias();
